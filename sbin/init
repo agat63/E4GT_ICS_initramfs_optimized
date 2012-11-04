@@ -1,0 +1,45 @@
+#!/sbin/busybox sh
+#
+## Save orig. path
+_PATH="$PATH"
+export PATH=/sbin
+
+cd /
+busybox mount -t proc proc /proc
+busybox mount -t sysfs sysfs /sys
+
+## Logging??
+busybox date >/boot-debug.log
+exec >>/boot-debug.log 2>&1
+
+## Bootmode
+echo "Checking BootMode ..." >> /boot-debug.log
+BMODE=System
+
+## Recovery Boot
+if grep -q bootmode=2 /proc/cmdline ; then
+  rm /init.rc
+  cp /recovery.rc /init.rc
+  BMODE=Recovery
+fi
+
+## Low Power Mode
+if grep -q 1 /sys/class/power_supply/battery/batt_lp_charging ; then
+  rm /init.rc
+  cp /lpm.rc /init.rc
+  BMODE=LowPower
+fi
+
+busybox umount /sys
+busybox umount /proc
+
+busybox date >>/boot-debug.log
+echo "Booting up with BootMode: ${BMODE}" >> /boot-debug.log
+
+## restore old path
+export PATH="${_PATH}"
+
+## remove symlink and execute init
+rm /init
+mv /innt /init
+exec /init
