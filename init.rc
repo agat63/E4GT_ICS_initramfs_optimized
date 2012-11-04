@@ -1,9 +1,6 @@
 on early-init
     start ueventd
 
-on early-init
-	preboot.sh
-
 # create mountpoints
     mkdir /mnt 0775 root system
 
